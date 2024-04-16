@@ -4,8 +4,12 @@ import {ethers} from 'ethers';
 import {ConversationContainer} from './ConversationContainer';
 import {View, Text, Button, StyleSheet, TouchableOpacity} from 'react-native';
 import Config from 'react-native-config';
-const myPrivateKey = Config.MY_PRIVATE_KEY;
-const infuraKey = Config.INFURA_KEY;
+import { useSDK } from "@metamask/sdk-react";
+// import detectEthereumProvider from "@metamask/detect-provider";
+
+// const myPrivateKey = "0xcc362ddcadfb1e2826aa3a7e2c6cf08121e8946617b9a870a0ca5e610b830c14";
+const myPrivateKey = "15c042b79999b73ca8cec027d45bb2da30f5173a96b92de644f3435ff28532d0";
+const infuraKey = "b1528436726c44f0a6c739baf91e04fb";
 console.log('infuraKey', Config);
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -85,7 +89,7 @@ export function FloatingInbox({wallet, env, onLogout}) {
   const [isOnNetwork, setIsOnNetwork] = useState(false);
   const {client, setClient} = useXmtp();
   const [isConnected, setIsConnected] = useState(false);
-
+  const { connect } = useSDK();
   useEffect(() => {
     (async () => {
       const initialIsOnNetwork =
@@ -122,18 +126,14 @@ export function FloatingInbox({wallet, env, onLogout}) {
   }, [isConnected, isOnNetwork]);
 
   const connectWallet = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        await window.ethereum.enable();
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signerXmtp = provider.getSigner();
-        setSigner(signerXmtp);
-        setIsConnected(true);
-      } catch (error) {
-        console.error('User rejected request', error);
-      }
-    } else {
-      console.error('Metamask not found');
+    try {
+      await connect();
+      const provider = ethers.getDefaultProvider(); // Sử dụng provider mặc định từ thư viện ethers
+      const signerXmtp = new ethers.Wallet(provider); // Tạo signer từ provider
+      setSigner(signerXmtp);
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Error connecting wallet', error);
     }
   };
 

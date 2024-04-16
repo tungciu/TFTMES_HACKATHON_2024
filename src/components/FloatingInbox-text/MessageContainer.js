@@ -1,8 +1,8 @@
-import React, {useState, useRef, useEffect} from 'react';
-import {MessageInput} from './MessageInput';
-import {MessageItem} from './MessageItem';
-import {useXmtp} from '@xmtp/react-native-sdk';
-import {View, Text, ScrollView, Alert, StyleSheet} from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { MessageInput } from './MessageInput';
+import { MessageItem } from './MessageItem';
+import { useXmtp } from '@xmtp/react-native-sdk';
+import { View, Text, ScrollView, Alert, StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
@@ -20,7 +20,7 @@ export const MessageContainer = ({
   selectConversation,
 }) => {
   const isFirstLoad = useRef(true);
-  const {client} = useXmtp();
+  const { client } = useXmtp();
   const bottomOfList = useRef(null);
 
   const [messages, setMessages] = useState([]);
@@ -58,7 +58,7 @@ export const MessageContainer = ({
       // Delay scrolling to the bottom to allow the layout to update
       timer = setTimeout(() => {
         if (isMounted && bottomOfList.current) {
-          bottomOfList.current.scrollToEnd({animated: false});
+          bottomOfList.current.scrollToEnd({ animated: false });
         }
       }, 0);
     };
@@ -72,22 +72,23 @@ export const MessageContainer = ({
   }, [conversation]);
 
   useEffect(() => {
-    // Define the callback function to be called for each new message
     const handleMessage = async message => {
       console.log('Stream', message.content());
       setMessages(prevMessages => updateMessages(prevMessages, message));
     };
 
-    const unsubscribe = conversation.streamMessages(handleMessage);
-    return () => {
-      console.log('Unsubscribing from message stream');
-      // call unsubscribe(); if you want to cancel the stream when the component is unmounted
-    };
-  }, []);
+    if (conversation && typeof conversation.streamMessages === 'function') {
+      const unsubscribe = conversation.streamMessages(handleMessage);
+      return () => {
+        console.log('Unsubscribing from message stream');
+        // Call unsubscribe(); if you want to cancel the stream when the component is unmounted
+      };
+    }
+  }, [conversation]);
 
   useEffect(() => {
     if (bottomOfList.current) {
-      bottomOfList.current.scrollToEnd({animated: true});
+      bottomOfList.current.scrollToEnd({ animated: true });
     }
   }, [messages]);
 
@@ -107,28 +108,29 @@ export const MessageContainer = ({
 
   return (
     <>
-      {isLoading ? (
-        <Text>Loading messages...</Text>
-      ) : (
-        <View style={styles.container}>
-          <ScrollView style={styles.messagesContainer} ref={bottomOfList}>
-            {messages.slice().map(message => {
-              return (
-                <MessageItem
-                  key={message.id}
-                  message={message}
-                  senderAddress={message.senderAddress}
-                  client={client}
-                />
-              );
-            })}
-          </ScrollView>
-          <MessageInput
-            onSendMessage={msg => {
-              handleSendMessage(msg);
-            }}
-          />
-        </View>
+    {isLoading ? (
+  <Text>Loading messages...</Text>
+) : (
+  <View style={styles.container}>
+ <ScrollView style={styles.messagesContainer} ref={bottomOfList}>
+  {messages.map(message => (
+    message.content() && (
+      <MessageItem
+        key={message.id}
+        message={message}
+        senderAddress={message.senderAddress}
+        client={client}
+      />
+    )
+  ))}
+</ScrollView>
+
+  <MessageInput
+    onSendMessage={msg => {
+      handleSendMessage(msg);
+    }}
+  />
+</View>
       )}
     </>
   );
